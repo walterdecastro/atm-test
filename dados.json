@@ -1,5 +1,6 @@
 {
   "temperatura": 25.5,
   "led": false,
-  "updated": "2024-01-19T10:30:00Z"
+  "umidade": 60,
+  "timestamp": "2024-01-19T10:00:00Z"
 }
