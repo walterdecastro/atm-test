@@ -57,7 +57,7 @@ class ArduinoController {
     async getSensorData() {
         try {
             // Método alternativo: dados armazenados em JSON
-            const response = await fetch('https://raw.githubusercontent.com/seu-usuario/seu-repo/main/dados.json');
+            const response = await fetch('https://raw.githubusercontent.com/walterdecastro/atm-test/main/dados.json');
             const data = await response.json();
             
             // Atualizar interface
