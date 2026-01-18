@@ -1,8 +1,8 @@
 // script.js
 class ArduinoController {
     constructor() {
-        this.apiBase = 'https://api.github.com/repos/seu-usuario/seu-repo/contents';
-        this.githubToken = 'SEU_TOKEN_AQUI'; // Token de acesso
+        this.apiBase = 'https://github.com/walterdecastro/atm-test/';
+        this.githubToken = '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'; // Token de acesso
         this.console = document.getElementById('consoleOutput');
         this.init();
     }
