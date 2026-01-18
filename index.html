@@ -1,16 +1,60 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Controle Arduino Virtual</title>
+    <link rel="stylesheet" href="style.css">
+</head>
 <body>
-  <button onclick="enviarComando('LED_ON')">Acender LED</button>
-  
-  <script>
-    async function enviarComando(comando) {
-      // Chamada para API do Wokwi
-      const response = await fetch('https://api.wokwi.com/...', {
-        method: 'POST',
-        body: JSON.stringify({ comando })
-      });
-    }
-  </script>
+    <div class="container">
+        <h1>🛠️ Controle Arduino Virtual</h1>
+        
+        <div class="dashboard">
+            <!-- Controles -->
+            <div class="card">
+                <h2>Controle LED</h2>
+                <div class="button-group">
+                    <button id="btnLedOn" class="btn btn-success">💡 Acender LED</button>
+                    <button id="btnLedOff" class="btn btn-danger">🔌 Apagar LED</button>
+                </div>
+                <div class="led-status">
+                    Status: <span id="ledStatus">Desconhecido</span>
+                </div>
+            </div>
+            
+            <!-- Dados do Sensor -->
+            <div class="card">
+                <h2>📊 Dados do Sensor</h2>
+                <div class="sensor-data">
+                    <div class="data-item">
+                        <span class="label">Temperatura:</span>
+                        <span id="tempValue" class="value">-- °C</span>
+                    </div>
+                    <div class="data-item">
+                        <span class="label">Última atualização:</span>
+                        <span id="lastUpdate" class="value">--</span>
+                    </div>
+                </div>
+                <button id="btnRefresh" class="btn btn-info">🔄 Atualizar Dados</button>
+            </div>
+            
+            <!-- Console -->
+            <div class="card console">
+                <h2>📝 Console</h2>
+                <div id="consoleOutput" class="console-output">
+                    <div>> Sistema iniciado. Aguardando conexão...</div>
+                </div>
+                <input type="text" id="consoleInput" placeholder="Digite um comando...">
+            </div>
+        </div>
+        
+        <div class="info">
+            <p>🔗 Conectado ao Arduino simulado no Wokwi</p>
+            <p>🔄 Atualização automática a cada 5 segundos</p>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
 </body>
 </html>
