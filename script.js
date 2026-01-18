@@ -1,98 +1,62 @@
-// script.js
-class ArduinoController {
-    constructor() {
-        this.apiBase = 'https://github.com/walterdecastro/atm-test/';
-        this.githubToken = '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'; // Token de acesso
-        this.console = document.getElementById('consoleOutput');
-        this.init();
-    }
-    
-    init() {
-        // Configurar botões
-        document.getElementById('btnLedOn').addEventListener('click', () => this.sendCommand('LED_ON'));
-        document.getElementById('btnLedOff').addEventListener('click', () => this.sendCommand('LED_OFF'));
-        document.getElementById('btnRefresh').addEventListener('click', () => this.getSensorData());
-        
-        // Atualização automática
-        setInterval(() => this.getSensorData(), 5000);
-        
-        this.log('Sistema iniciado. Pronto para controlar Arduino!');
-    }
-    
-    async sendCommand(command) {
-        this.log(`Enviando comando: ${command}`);
-        
-        try {
-            // Método 1: Usando GitHub API (armazenando comando em arquivo)
-            const response = await fetch(`${this.apiBase}/comando.txt`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `token ${this.githubToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    message: `Comando: ${command}`,
-                    content: btoa(command), // Converter para base64
-                    sha: await this.getFileSHA('comando.txt')
-                })
-            });
-            
-            if (response.ok) {
-                this.log(`✅ Comando "${command}" enviado com sucesso!`);
-                
-                // Atualizar interface
-                if (command === 'LED_ON') {
-                    document.getElementById('ledStatus').textContent = 'LIGADO';
-                    document.getElementById('ledStatus').className = 'status-on';
-                } else if (command === 'LED_OFF') {
-                    document.getElementById('ledStatus').textContent = 'DESLIGADO';
-                    document.getElementById('ledStatus').className = 'status-off';
-                }
-            }
-        } catch (error) {
-            this.log(`❌ Erro: ${error.message}`);
-        }
-    }
-    
-    async getSensorData() {
-        try {
-            // Método alternativo: dados armazenados em JSON
-            const response = await fetch('https://raw.githubusercontent.com/walterdecastro/atm-test/main/dados.json');
-            const data = await response.json();
-            
-            // Atualizar interface
-            document.getElementById('tempValue').textContent = `${data.temperatura} °C`;
-            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
-            
-            this.log(`📡 Dados recebidos: ${data.temperatura}°C, LED: ${data.led ? 'LIGADO' : 'DESLIGADO'}`);
-            
-        } catch (error) {
-            this.log(`⚠️ Aguardando dados do sensor...`);
-        }
-    }
-    
-    async getFileSHA(filename) {
-        try {
-            const response = await fetch(`${this.apiBase}/${filename}`, {
-                headers: { 'Authorization': `token ${this.githubToken}` }
-            });
-            const data = await response.json();
-            return data.sha;
-        } catch {
-            return null; // Arquivo não existe ainda
-        }
-    }
-    
-    log(message) {
-        const timestamp = new Date().toLocaleTimeString();
-        const entry = document.createElement('div');
-        entry.innerHTML = `[${timestamp}] ${message}`;
-        this.console.appendChild(entry);
-        this.console.scrollTop = this.console.scrollHeight;
+// LER arquivo (sem token, apenas leitura)
+async function lerComando() {
+    try {
+        const response = await fetch(
+            'https://raw.githubusercontent.com/walterdecastro/atm-test/main/comando.txt'
+        );
+        const texto = await response.text();
+        return texto.trim();
+    } catch (error) {
+        console.error('Erro ao ler:', error);
+        return '';
     }
 }
 
-// Iniciar quando a página carregar
-document.addEventListener('DOMContentLoaded', () => {
-    window.controller = new ArduinoController();
-});
+// ESCREVER arquivo (precisa de token e API)
+async function escreverComando(comando) {
+    const GITHUB_TOKEN = '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'; // Token com permissões
+    
+    try {
+        // 1. Primeiro pega o SHA atual do arquivo
+        const sha = await getFileSHA();
+        
+        // 2. Atualiza via API GitHub
+        const response = await fetch(
+            'https://api.github.com/repos/walterdecastro/atm-test/contents/comando.txt',
+            {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${GITHUB_TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: `Comando: ${comando}`,
+                    content: btoa(comando), // Base64
+                    sha: sha
+                })
+            }
+        );
+        
+        return response.ok;
+    } catch (error) {
+        console.error('Erro ao escrever:', error);
+        return false;
+    }
+}
+
+async function getFileSHA() {
+    const GITHUB_TOKEN = 'SEU_TOKEN_AQUI';
+    
+    try {
+        const response = await fetch(
+            'https://api.github.com/repos/walterdecastro/atm-test/contents/comando.txt',
+            {
+                headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
+            }
+        );
+        const data = await response.json();
+        return data.sha;
+    } catch {
+        return null; // Arquivo não existe ainda
+    }
+}
