@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <button onclick="enviarComando('LED_ON')">Acender LED</button>
+  
+  <script>
+    async function enviarComando(comando) {
+      // Chamada para API do Wokwi
+      const response = await fetch('https://api.wokwi.com/...', {
+        method: 'POST',
+        body: JSON.stringify({ comando })
+      });
+    }
+  </script>
+</body>
+</html>
