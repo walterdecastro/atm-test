@@ -5,6 +5,175 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Controle Arduino Virtual</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Estilos básicos se não tiver style.css */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            margin: 0;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        h1 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            margin: 0;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 30px;
+        }
+        
+        .card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            flex: 1;
+        }
+        
+        .btn-success {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+        
+        .btn-info {
+            background: #2196F3;
+            color: white;
+            width: 100%;
+            margin-top: 15px;
+        }
+        
+        .btn:hover {
+            opacity: 0.9;
+            transform: scale(1.05);
+        }
+        
+        .led-status {
+            font-size: 18px;
+            font-weight: bold;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .status-on {
+            color: #4CAF50;
+        }
+        
+        .status-off {
+            color: #f44336;
+        }
+        
+        .sensor-data {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .data-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .label {
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .value {
+            font-weight: bold;
+            color: #2196F3;
+        }
+        
+        .console {
+            grid-column: span 2;
+        }
+        
+        .console-output {
+            background: #1e1e1e;
+            color: #00ff00;
+            height: 200px;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            overflow-y: auto;
+            margin-bottom: 15px;
+        }
+        
+        #consoleInput {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        
+        .info {
+            text-align: center;
+            padding: 20px;
+            background: #f0f0f0;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            .console {
+                grid-column: span 1;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -55,6 +224,210 @@
         </div>
     </div>
     
-    <script src="script.js"></script>
+    <script>
+        // ============= CONFIGURAÇÕES =============
+        // EDITAR AQUI: Suas informações do GitHub
+        const GITHUB_USER = 'walterdecastro';
+        const GITHUB_REPO = 'atm-test';
+        const GITHUB_TOKEN = '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'; // Coloque seu token aqui
+        
+        // URLs corretas (sem CORS para leitura)
+        const URL_COMANDO = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/comando.txt`;
+        const URL_DADOS = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/dados.json`;
+        const URL_API_COMANDO = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/comando.txt`;
+        
+        // ============= CLASSE PRINCIPAL =============
+        class ArduinoController {
+            constructor() {
+                this.console = document.getElementById('consoleOutput');
+                this.init();
+            }
+            
+            init() {
+                // Configurar botões
+                document.getElementById('btnLedOn').addEventListener('click', 
+                    () => this.enviarComando('LED_ON'));
+                document.getElementById('btnLedOff').addEventListener('click', 
+                    () => this.enviarComando('LED_OFF'));
+                document.getElementById('btnRefresh').addEventListener('click', 
+                    () => this.atualizarDados());
+                
+                // Console input
+                document.getElementById('consoleInput').addEventListener('keypress', 
+                    (e) => {
+                        if (e.key === 'Enter') {
+                            this.enviarComando(e.target.value);
+                            e.target.value = '';
+                        }
+                    });
+                
+                // Atualização automática
+                setInterval(() => this.atualizarDados(), 5000);
+                
+                this.log('🚀 Sistema iniciado!');
+                this.atualizarDados(); // Primeira atualização
+            }
+            
+            // ========== MÉTODO PRINCIPAL: ENVIAR COMANDO ==========
+            async enviarComando(comando) {
+                this.log(`📤 Enviando comando: ${comando}`);
+                
+                if (!GITHUB_TOKEN) {
+                    this.log('❌ ERRO: Token GitHub não configurado!');
+                    this.log('💡 Adicione seu token em: const GITHUB_TOKEN = "seu_token_aqui";');
+                    return;
+                }
+                
+                try {
+                    // 1. Primeiro, pega o SHA do arquivo atual
+                    const sha = await this.getFileSHA();
+                    
+                    if (!sha) {
+                        this.log('⚠️ Arquivo não existe, criando novo...');
+                    }
+                    
+                    // 2. Atualiza o arquivo comando.txt via API GitHub
+                    const response = await fetch(URL_API_COMANDO, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `token ${GITHUB_TOKEN}`,
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/vnd.github.v3+json'
+                        },
+                        body: JSON.stringify({
+                            message: `Comando: ${comando}`,
+                            content: btoa(comando), // Converte para base64
+                            sha: sha // Pode ser null se arquivo não existir
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        this.log(`✅ Comando "${comando}" enviado com sucesso!`);
+                        
+                        // Atualizar interface imediatamente
+                        if (comando === 'LED_ON') {
+                            this.atualizarStatusLED('LIGADO', true);
+                        } else if (comando === 'LED_OFF') {
+                            this.atualizarStatusLED('DESLIGADO', false);
+                        }
+                        
+                        // Verifica se o comando foi executado
+                        setTimeout(() => this.verificarExecucao(comando), 2000);
+                        
+                    } else {
+                        const error = await response.json();
+                        this.log(`❌ Erro GitHub: ${error.message}`);
+                    }
+                    
+                } catch (error) {
+                    this.log(`❌ Erro de rede: ${error.message}`);
+                }
+            }
+            
+            // ========== LER DADOS DO SENSOR ==========
+            async atualizarDados() {
+                try {
+                    // Lê dados do arquivo JSON (URL raw, sem CORS)
+                    const response = await fetch(URL_DADOS + '?t=' + Date.now());
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    
+                    const dados = await response.json();
+                    
+                    // Atualiza interface
+                    document.getElementById('tempValue').textContent = 
+                        `${dados.temperatura || '--'} °C`;
+                    
+                    document.getElementById('lastUpdate').textContent = 
+                        new Date().toLocaleTimeString();
+                    
+                    // Atualiza status do LED se existir no JSON
+                    if (dados.led !== undefined) {
+                        this.atualizarStatusLED(
+                            dados.led ? 'LIGADO' : 'DESLIGADO',
+                            dados.led
+                        );
+                    }
+                    
+                    this.log(`📡 Dados atualizados: ${dados.temperatura}°C`);
+                    
+                } catch (error) {
+                    this.log(`⚠️ Aguardando dados do sensor...`);
+                    // Não mostra erro para não poluir o console
+                }
+            }
+            
+            // ========== FUNÇÕES AUXILIARES ==========
+            async getFileSHA() {
+                if (!GITHUB_TOKEN) return null;
+                
+                try {
+                    const response = await fetch(URL_API_COMANDO, {
+                        headers: { 
+                            'Authorization': `token ${GITHUB_TOKEN}`,
+                            'Accept': 'application/vnd.github.v3+json'
+                        }
+                    });
+                    
+                    if (response.status === 404) {
+                        return null; // Arquivo não existe ainda
+                    }
+                    
+                    const data = await response.json();
+                    return data.sha; // SHA do arquivo atual
+                    
+                } catch (error) {
+                    this.log(`⚠️ Não conseguiu ler SHA: ${error.message}`);
+                    return null;
+                }
+            }
+            
+            async verificarExecucao(comandoEnviado) {
+                try {
+                    // Lê o arquivo para ver se foi limpo (executado)
+                    const response = await fetch(URL_COMANDO + '?t=' + Date.now());
+                    const conteudoAtual = await response.text();
+                    
+                    if (conteudoAtual.trim() === '') {
+                        this.log(`🎯 Comando "${comandoEnviado}" foi executado pelo Arduino!`);
+                    } else if (conteudoAtual.trim() === comandoEnviado) {
+                        this.log(`⏳ Aguardando Arduino executar "${comandoEnviado}"...`);
+                    }
+                    
+                } catch (error) {
+                    // Ignora erros de leitura
+                }
+            }
+            
+            atualizarStatusLED(texto, ligado) {
+                const elemento = document.getElementById('ledStatus');
+                elemento.textContent = texto;
+                elemento.className = ligado ? 'status-on' : 'status-off';
+            }
+            
+            log(mensagem) {
+                const timestamp = new Date().toLocaleTimeString();
+                const entry = document.createElement('div');
+                entry.innerHTML = `[${timestamp}] ${mensagem}`;
+                this.console.appendChild(entry);
+                this.console.scrollTop = this.console.scrollHeight;
+            }
+        }
+        
+        // ========== INICIAR APLICAÇÃO ==========
+        document.addEventListener('DOMContentLoaded', () => {
+            window.controller = new ArduinoController();
+            
+            // Verifica se token está configurado
+            if (!GITHUB_TOKEN) {
+                window.controller.log('⚠️ ATENÇÃO: Token GitHub não configurado!');
+                window.controller.log('1. Gere um token em: https://github.com/settings/tokens');
+                window.controller.log('2. Selecione permissão: "repo"');
+                window.controller.log('3. Cole no código: const GITHUB_TOKEN = "seu_token";');
+            }
+        });
+    </script>
 </body>
 </html>
